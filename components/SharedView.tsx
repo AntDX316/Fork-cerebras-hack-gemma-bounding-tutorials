@@ -77,7 +77,7 @@ export function SharedView({
       </div>
 
       <div className="min-w-0 space-y-4">
-        <SpeedHud speed={result.speed} model={MODEL} />
+        <SpeedHud result={result} model={MODEL} />
         <GoodPanel result={result} />
         <ResourcesPanel result={result} />
         <AskBox context={askContext} image={imageDataUri} />

@@ -235,7 +235,7 @@ export default function Analyzer() {
           <CollapseButton side="right" onClose={() => setRightOpen(false)} />
           {result ? (
           <>
-            <SpeedHud speed={result.speed} model={MODEL} />
+            <SpeedHud result={result} model={MODEL} />
             <GoodPanel result={result} />
             <ResourcesPanel result={result} />
             {result.warnings && result.warnings.length > 0 && (
