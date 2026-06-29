@@ -1,5 +1,6 @@
 import Analyzer from "@/components/Analyzer";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   return (
@@ -8,15 +9,18 @@ export default function Home() {
         <div className="mx-auto flex max-w-[1700px] items-center justify-between px-4 py-4">
           <div>
             <h1 className="text-lg font-bold text-foreground">
-              Visual Coach <span className="text-cyan-600">·</span> Gemma 4 on Cerebras
+              Visual Coach <span className="text-primary">·</span> Gemma 4 on Cerebras
             </h1>
             <p className="text-xs text-muted-foreground">
               Point at anything — get instant on-image guidance, not a wall of text.
             </p>
           </div>
-          <Button variant="outline" size="sm" render={<a href="/api/health?live=1" />}>
-            Health check
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" size="sm" render={<a href="/api/health?live=1" />}>
+              Health check
+            </Button>
+          </div>
         </div>
       </header>
 

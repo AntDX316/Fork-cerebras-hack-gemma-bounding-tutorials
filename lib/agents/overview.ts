@@ -4,6 +4,7 @@ import { imageContent, textContent } from "@/lib/cerebras/content";
 import { Metrics } from "@/lib/cerebras/metrics";
 import { overviewSchema } from "@/schemas/overview";
 import { overviewSystem, overviewUser } from "@/prompts/overview";
+import type { ReasoningEffort } from "@/lib/env";
 import type { Region, TaskProfile } from "@/schemas/annotation";
 
 export interface OverviewOut {
@@ -19,15 +20,19 @@ export async function overview(
   regions: Region[],
   image: string,
   metrics: Metrics,
+  effort: ReasoningEffort = "low",
 ): Promise<OverviewOut> {
   const r = await chat({
     messages: [
       { role: "system", content: overviewSystem(profile, goal) },
       { role: "user", content: [textContent(overviewUser(regions)), imageContent(image)] },
     ],
-    reasoningEffort: "none",
+    // BRAIN: light reasoning sharpens the whole-image summary + tip.
+    // Budget covers reasoning tokens + the JSON, or content truncates.
+    // (Live/webcam frames pass "none" for minimum latency.)
+    reasoningEffort: effort,
     responseFormat: overviewSchema,
-    maxTokens: 400,
+    maxTokens: 1200,
   });
   metrics.record("overview", r, r.clientIndex);
   const parsed = parseJson<Partial<OverviewOut>>(r.content);

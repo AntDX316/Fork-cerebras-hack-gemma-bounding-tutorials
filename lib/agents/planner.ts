@@ -4,6 +4,7 @@ import { imageContent, textContent } from "@/lib/cerebras/content";
 import { Metrics } from "@/lib/cerebras/metrics";
 import { taskProfileSchema } from "@/schemas/taskProfile";
 import { PLANNER_SYSTEM, plannerUser } from "@/prompts/planner";
+import type { ReasoningEffort } from "@/lib/env";
 import type { RenderStyle, TaskProfile } from "@/schemas/annotation";
 
 const RENDER_STYLES: RenderStyle[] = ["dots", "regions", "steps"];
@@ -31,15 +32,19 @@ export async function plan(
   goal: string | undefined,
   image: string,
   metrics: Metrics,
+  effort: ReasoningEffort = "low",
 ): Promise<TaskProfile> {
   const r = await chat({
     messages: [
       { role: "system", content: PLANNER_SYSTEM },
       { role: "user", content: [textContent(plannerUser(goal ?? "")), imageContent(image)] },
     ],
-    reasoningEffort: "none",
+    // BRAIN: light reasoning improves how it designs the coaching profile.
+    // Budget must cover reasoning tokens + the JSON, or content truncates.
+    // (Live/webcam frames pass "none" for minimum latency.)
+    reasoningEffort: effort,
     responseFormat: taskProfileSchema,
-    maxTokens: 500,
+    maxTokens: 1400,
   });
   metrics.record("planner", r, r.clientIndex);
   return normalizeProfile(parseJson<Partial<TaskProfile>>(r.content));

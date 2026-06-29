@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { chatStream } from "@/lib/cerebras/client";
 import { imageContent, textContent } from "@/lib/cerebras/content";
+import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,6 +22,16 @@ const bodySchema = z.object({
  * Streams plain-text tokens so the UI shows Cerebras speed live.
  */
 export async function POST(req: NextRequest) {
+  // Public surface (the shared /s page exposes this) — cap per-IP usage so an
+  // anonymous visitor can't burn Cerebras quota.
+  const limited = rateLimit(req, { keyPrefix: "chat", limit: 20, windowMs: 60_000 });
+  if (!limited.ok) {
+    return new Response("Too many requests; please wait a moment.", {
+      status: 429,
+      headers: rateLimitHeaders(limited),
+    });
+  }
+
   let raw: unknown;
   try {
     raw = await req.json();

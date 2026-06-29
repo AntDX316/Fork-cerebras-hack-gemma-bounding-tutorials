@@ -15,6 +15,7 @@ const requestSchema = z.object({
   goal: z.string().max(2000).optional(),
   presetId: z.string().max(64).optional(),
   images: z.array(imageDataUri).min(1).max(5),
+  fast: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {

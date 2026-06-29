@@ -14,7 +14,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function ExportBar({ src, result }: { src: string; result: AnalyzeResult }) {
+export function ExportBar({
+  src,
+  result,
+  manualSrc,
+}: {
+  src: string;
+  result: AnalyzeResult;
+  manualSrc?: string;
+}) {
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -46,16 +54,27 @@ export function ExportBar({ src, result }: { src: string; result: AnalyzeResult 
           disabled={!!busy}
           onClick={() =>
             run("share", async () => {
-              const blob = await pngBlob();
-              const res = await createShareLink(blob, result.profile.title);
+              const canvas = await buildReportCanvas(src, result);
+              const og = canvas.toDataURL("image/png");
+              const res = await createShareLink({
+                image: src,
+                manual: manualSrc,
+                result,
+                title: result.profile.title,
+                og,
+              });
               if ("error" in res) {
-                downloadBlob(blob, `${fileName}.png`);
+                downloadBlob(await canvasToBlob(canvas), `${fileName}.png`);
                 setStatus(`${res.error} — downloaded the image instead.`);
                 return;
               }
               setShareUrl(res.shareUrl);
               const copied = await copyText(res.shareUrl);
-              setStatus(copied ? "Share link copied to clipboard ✓" : "Share link ready below.");
+              setStatus(
+                copied
+                  ? "Interactive share link copied ✓"
+                  : "Interactive share link ready below.",
+              );
             })
           }
         >

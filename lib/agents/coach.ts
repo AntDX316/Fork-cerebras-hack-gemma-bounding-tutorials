@@ -4,6 +4,7 @@ import { imageContent, textContent } from "@/lib/cerebras/content";
 import { Metrics } from "@/lib/cerebras/metrics";
 import { coachSchema } from "@/schemas/coach";
 import { coachSystem, coachUser } from "@/prompts/coach";
+import type { ReasoningEffort } from "@/lib/env";
 import type { Box2D, Fact, Region, TaskProfile } from "@/schemas/annotation";
 
 export interface CoachOut {
@@ -44,6 +45,7 @@ export async function coachRegion(
   researchContext: string | undefined,
   clientIndex: number,
   metrics: Metrics,
+  effort: ReasoningEffort = "low",
 ): Promise<CoachOut> {
   const r = await chat({
     messages: [
@@ -53,9 +55,12 @@ export async function coachRegion(
         content: [textContent(coachUser(region, researchContext)), ...images.map(imageContent)],
       },
     ],
-    reasoningEffort: "none", // deterministic, reliable structured JSON
+    // BRAIN: light reasoning improves the per-region scoring + advice.
+    // Budget covers reasoning tokens + the JSON, or content truncates.
+    // (Live/webcam frames pass "none" for minimum latency.)
+    reasoningEffort: effort,
     responseFormat: coachSchema,
-    maxTokens: 768,
+    maxTokens: 1600,
     temperature: 0.2,
     clientIndex,
   });

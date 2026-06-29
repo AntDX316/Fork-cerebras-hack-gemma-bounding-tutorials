@@ -4,6 +4,7 @@ import { imageContent, textContent } from "@/lib/cerebras/content";
 import { Metrics } from "@/lib/cerebras/metrics";
 import { groundingSchema } from "@/schemas/grounding";
 import { groundingSystem, GROUNDING_USER } from "@/prompts/grounding";
+import type { ReasoningEffort } from "@/lib/env";
 import type { Box2D, Region, TaskProfile } from "@/schemas/annotation";
 
 function toBox(arr: unknown): Box2D {
@@ -20,15 +21,19 @@ export async function ground(
   profile: TaskProfile,
   images: string[],
   metrics: Metrics,
+  effort: ReasoningEffort = "low",
 ): Promise<Region[]> {
   const r = await chat({
     messages: [
       { role: "system", content: groundingSystem(profile) },
       { role: "user", content: [textContent(GROUNDING_USER), ...images.map(imageContent)] },
     ],
-    reasoningEffort: "none",
+    // EYES: light reasoning helps it choose the most relevant targets.
+    // Budget covers reasoning + the regions JSON (temp 0 keeps boxes stable).
+    // (Live/webcam frames pass "none" for minimum latency.)
+    reasoningEffort: effort,
     responseFormat: groundingSchema,
-    maxTokens: 900,
+    maxTokens: 2200,
     temperature: 0, // deterministic, stable coordinates
   });
   metrics.record("grounding", r, r.clientIndex);

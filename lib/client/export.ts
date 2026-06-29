@@ -314,18 +314,23 @@ export async function shareImage(blob: Blob, title: string, text: string): Promi
 }
 
 /**
- * Upload the exported PNG to the server (Vercel Blob) and get a public share URL.
- * Returns an error string if sharing isn't configured (no BLOB_READ_WRITE_TOKEN).
+ * Persist the analysis to the server (Vercel Blob) and get a public, INTERACTIVE
+ * share URL (the /s page re-renders the live overlay + follow-up chat, not a flat
+ * PNG). `image` is the clean scene data URI; `og` is the baked report-card PNG used
+ * only for social unfurl. Returns an error string if sharing isn't configured.
  */
-export async function createShareLink(
-  blob: Blob,
-  title: string,
-): Promise<{ shareUrl: string; imageUrl: string } | { error: string }> {
+export async function createShareLink(input: {
+  image: string;
+  result: AnalyzeResult;
+  title: string;
+  manual?: string;
+  og?: string;
+}): Promise<{ shareUrl: string; imageUrl: string } | { error: string }> {
   try {
-    const res = await fetch(`/api/share?title=${encodeURIComponent(title)}`, {
+    const res = await fetch(`/api/share`, {
       method: "POST",
-      headers: { "Content-Type": "image/png" },
-      body: blob,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
     });
     const data = await res.json();
     if (!res.ok) return { error: data.error ?? "Sharing failed" };

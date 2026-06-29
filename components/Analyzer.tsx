@@ -52,7 +52,8 @@ export default function Analyzer() {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ goal: goal || undefined, presetId, images: imgs }),
+          // Live webcam frames skip reasoning for minimum latency.
+          body: JSON.stringify({ goal: goal || undefined, presetId, images: imgs, fast: live }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Analysis failed");
@@ -66,7 +67,7 @@ export default function Analyzer() {
         inFlight.current = false;
       }
     },
-    [goal, presetId],
+    [goal, presetId, live],
   );
 
   const onPreset = (id: string) => {
@@ -117,7 +118,7 @@ export default function Analyzer() {
                 <Button
                   onClick={() => analyze(previewImages)}
                   disabled={loading || previewImages.length === 0}
-                  className="mt-3 h-10 w-full bg-cyan-600 text-white hover:bg-cyan-500"
+                  className="mt-3 h-10 w-full"
                 >
                   {loading ? "Analyzing…" : "Analyze ⚡"}
                 </Button>
@@ -169,12 +170,14 @@ export default function Analyzer() {
         )}
 
         {loading && (
-          <div className="w-full rounded-lg bg-cyan-50 px-3 py-2 text-center text-sm text-cyan-700">
+          <div className="w-full rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-center text-sm font-medium text-primary">
             Gemma 4 is analyzing on Cerebras…
           </div>
         )}
 
-        {result && displaySrc && <ExportBar src={displaySrc} result={result} />}
+        {result && displaySrc && (
+          <ExportBar src={displaySrc} result={result} manualSrc={displayManual} />
+        )}
       </div>
 
       {/* Right: results */}
@@ -184,7 +187,7 @@ export default function Analyzer() {
             <SpeedHud speed={result.speed} model={MODEL} />
             <GoodPanel result={result} />
             {result.warnings && result.warnings.length > 0 && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <div className="rounded-xl border border-amber-300/50 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
                 <div className="font-semibold">Notes</div>
                 <ul className="mt-1 list-disc space-y-0.5 pl-4">
                   {result.warnings.map((w, i) => (

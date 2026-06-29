@@ -79,9 +79,12 @@ export interface SpeedReport {
   completionTokens: number;
   /** Effective aggregate throughput (completion tokens / wall-clock seconds). */
   tokensPerSecond: number;
+  /** Fastest single Cerebras call's generation rate (the true on-device speed). */
+  peakTokensPerSecond: number;
   ttftMs: number;
   wallClockMs: number;
-  parallelCalls: number;
+  /** Total number of Cerebras model calls made for this request. */
+  modelCalls: number;
   keysUsed: number;
   perCall: { agent: string; totalTimeMs: number; totalTokens: number }[];
 }
@@ -101,4 +104,6 @@ export interface AnalyzeRequest {
   presetId?: string;
   /** Data URIs (base64). Index 0 is the primary image; later ones are references. */
   images: string[];
+  /** Live/webcam frames: skip reasoning everywhere for minimum latency. */
+  fast?: boolean;
 }

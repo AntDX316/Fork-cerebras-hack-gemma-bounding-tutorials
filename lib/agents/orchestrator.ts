@@ -13,6 +13,10 @@ import { scoreColor, neutralColor } from "@/lib/color";
 import { centerOf } from "@/lib/scale";
 import { round1, avg, errMsg } from "@/lib/util";
 import { audit } from "@/lib/audit/log";
+import type { ReasoningEffort } from "@/lib/env";
+
+/** Only the most-relevant regions get a (slower, rate-limited) web search. */
+const RESEARCH_TOP_K = 4;
 import type {
   AnalyzeRequest,
   AnalyzeResult,
@@ -65,6 +69,10 @@ export async function orchestrate(req: AnalyzeRequest): Promise<AnalyzeResult> {
   if (images.length === 0) throw new Error("No image provided");
   const primary = images[0];
 
+  // Live/webcam frames pass fast=true → drop reasoning everywhere for minimum
+  // latency (the empirical test showed reasoning adds ~250 tok/call).
+  const effort: ReasoningEffort = req.fast ? "none" : "low";
+
   // 1. Resolve the TaskProfile (preset bypasses the Planner for determinism).
   const preset = getPreset(req.presetId);
   let goal = req.goal?.trim() ?? "";
@@ -74,7 +82,7 @@ export async function orchestrate(req: AnalyzeRequest): Promise<AnalyzeResult> {
     if (!goal) goal = preset.goal;
   } else {
     try {
-      profile = await plan(goal, primary, metrics);
+      profile = await plan(goal, primary, metrics, effort);
     } catch (e) {
       warnings.push("Planner failed, using default profile: " + errMsg(e));
       profile = {
@@ -95,57 +103,69 @@ export async function orchestrate(req: AnalyzeRequest): Promise<AnalyzeResult> {
   // 2. Vision grounding (one call, all images so the manual can be referenced).
   let regions: Region[] = [];
   try {
-    regions = await ground(profile, images, metrics);
+    regions = await ground(profile, images, metrics, effort);
   } catch (e) {
     warnings.push("Grounding failed: " + errMsg(e));
   }
 
-  // 3. Per-region fan-out: Research (optional) then Coach, across the key pool.
-  const built = await fanout(regions, async (region, clientIndex): Promise<Annotation> => {
-    let researchContext: string | undefined;
-    let citations: Citation[] = [];
-    if (profile.research) {
-      try {
-        const rr = await research(region, goal, profile);
-        if (rr) {
-          researchContext = rr.context;
-          citations = rr.citations;
+  // 3. Per-region fan-out (Research → Coach) AND the whole-image Overview run
+  // concurrently — Overview only needs regions + image, so there's no reason to
+  // wait for the fan-out. Each coach call round-robins across the key pool.
+  const fanoutPromise = fanout(
+    regions,
+    async (region, clientIndex, index): Promise<Annotation> => {
+      let researchContext: string | undefined;
+      let citations: Citation[] = [];
+      // Only the top-K most-relevant regions get a web search (rate/cost).
+      if (profile.research && index < RESEARCH_TOP_K) {
+        try {
+          const rr = await research(region, goal, profile);
+          if (rr) {
+            researchContext = rr.context;
+            citations = rr.citations;
+          }
+        } catch (e) {
+          warnings.push(`Research failed for "${region.label}": ${errMsg(e)}`);
         }
-      } catch (e) {
-        warnings.push(`Research failed for "${region.label}": ${errMsg(e)}`);
       }
-    }
-    try {
-      const coach = await coachRegion(
-        region,
-        profile,
-        goal,
-        images,
-        researchContext,
-        clientIndex,
-        metrics,
-      );
-      return buildAnnotation(region, coach, profile, citations);
-    } catch (e) {
-      warnings.push(`Coaching failed for "${region.label}": ${errMsg(e)}`);
-      return buildAnnotation(region, null, profile, citations);
-    }
-  });
+      try {
+        const coach = await coachRegion(
+          region,
+          profile,
+          goal,
+          images,
+          researchContext,
+          clientIndex,
+          metrics,
+          effort,
+        );
+        return buildAnnotation(region, coach, profile, citations);
+      } catch (e) {
+        warnings.push(`Coaching failed for "${region.label}": ${errMsg(e)}`);
+        return buildAnnotation(region, null, profile, citations);
+      }
+    },
+  );
+
+  const overviewPromise = overview(profile, goal, regions, primary, metrics, effort)
+    .then((ov) => ({ ov }) as const)
+    .catch((e) => ({ err: e }) as const);
+
+  const [built, ovSettled] = await Promise.all([fanoutPromise, overviewPromise]);
 
   let annotations = built;
   if (profile.sequence) annotations = sequence(annotations);
 
-  // 4. Whole-image overview.
+  // 4. Resolve the overview (or fall back to the average coach score).
   let overallScore: number | null = null;
   let summary: string[] = [];
   let tip = "";
-  try {
-    const ov = await overview(profile, goal, regions, primary, metrics);
-    overallScore = profile.scored ? round1(ov.overallScore) : null;
-    summary = ov.summary;
-    tip = ov.tip;
-  } catch (e) {
-    warnings.push("Overview failed: " + errMsg(e));
+  if ("ov" in ovSettled) {
+    overallScore = profile.scored ? round1(ovSettled.ov.overallScore) : null;
+    summary = ovSettled.ov.summary;
+    tip = ovSettled.ov.tip;
+  } else {
+    warnings.push("Overview failed: " + errMsg(ovSettled.err));
     if (profile.scored && annotations.length > 0) {
       overallScore = round1(avg(annotations.map((a) => a.score)));
     }

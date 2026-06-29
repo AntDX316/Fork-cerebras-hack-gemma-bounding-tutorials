@@ -126,7 +126,7 @@ export function ImageStage({
     <div className="w-full">
       <div ref={areaRef} className="flex w-full justify-center">
         <div
-          className="relative overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200"
+          className="relative overflow-hidden rounded-2xl bg-muted ring-1 ring-border"
           style={boxStyle}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -184,7 +184,7 @@ export function ImageStage({
 
       {/* Manual / reference image with the relevant region highlighted. */}
       {manualSrc && (
-        <div className="relative mx-auto mt-3 w-full max-w-md overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
+        <div className="relative mx-auto mt-3 w-full max-w-md overflow-hidden rounded-xl bg-muted ring-1 ring-border">
           <div className="absolute left-2 top-2 z-10 rounded-md bg-slate-900/80 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
             Reference / manual
           </div>

@@ -10,6 +10,10 @@ ACCURACY RULES (these override everything else):
 - Do not output the same physical object twice. Each region must be a distinct thing.
 - Prefer fewer, correct detections over many uncertain ones. If unsure whether something is really there, leave it out.
 
+IMAGE ROLES:
+- Locate targets in the FIRST image only — that is the live scene, and every box you output refers to it.
+- If a SECOND image is provided, it is a reference/manual/diagram for context only. Never output a box located in the second image.
+
 COORDINATE RULES:
 - box_2d = [y1, x1, y2, x2] as INTEGERS normalized to a 0-1000 grid. (0,0) is the TOP-LEFT corner; (1000,1000) is the BOTTOM-RIGHT. y is vertical (top→down), x is horizontal (left→right).
 - The box must TIGHTLY and ACCURATELY enclose the object exactly where it appears. Always ensure y1 < y2 and x1 < x2.
