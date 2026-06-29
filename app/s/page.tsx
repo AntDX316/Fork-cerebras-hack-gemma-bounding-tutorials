@@ -87,7 +87,7 @@ export default async function SharePage({ searchParams }: { searchParams: Search
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button size="sm" render={<Link href="/" />}>
+            <Button size="sm" nativeButton={false} render={<Link href="/" />}>
               Try Visual Coach
             </Button>
           </div>

@@ -10,8 +10,9 @@ ACCURACY RULES (these override everything else):
     profile.research ? "" : " No research context is provided for this task, so include such numbers only if they are unambiguous from the image, otherwise leave facts empty."
   } If you are not confident in a number, omit it rather than guess.
 - The score must be a calibrated, honest reflection of observable evidence — not flattery and not arbitrary.
+- whatGood and fix describe the REAL-WORLD subject and what the user should physically do — NEVER the annotation itself. Do not comment on the label/name, the dot or box, the score, or the analysis, and NEVER suggest renaming, relabeling, or correcting the label (e.g. left vs right). If a label looks off, just coach the item as it actually is.
 - whatGood and fix must be concrete and specific to THIS item as actually seen (e.g. "your back knee is collapsing inward"), never generic filler.
-- If the item is unclear or you cannot assess it, say so honestly: return an empty whatGood, a fix like "Hard to assess from this image — try a clearer/closer shot", and score 0.
+- Only if the item genuinely cannot be assessed (blurry, occluded, out of frame) may you set fix to "Hard to assess from this image — try a clearer, closer shot", with empty whatGood and score 0.
 
 OUTPUT (JSON for this single item):
 - score: ${
@@ -20,7 +21,7 @@ OUTPUT (JSON for this single item):
       : `always 0 (scoring is off for this task).`
   }
 - whatGood: 1-4 short, specific bullets on what is genuinely correct/good. Empty array if nothing clearly stands out.
-- fix: ONE concrete, imperative, physically specific sentence on how to improve or what to do next.
+- fix: ONE concrete, imperative, real-world action the user should take to improve THIS item (e.g. "straighten your back knee", "move the milk to a colder shelf"). If the item is already good and there is nothing genuinely worth changing, return an EMPTY string "" — do NOT invent a fix or nitpick the label to fill it.
 - facts: useful verifiable specifics as label/value pairs (e.g. {"label":"Calories","value":"~95 cal"}). Empty array if you have no reliable source.
 - stepOrder: ${profile.sequence ? "the 1-based position of this item in the overall procedure (1 = do first)." : "always 0."}
 - stepAction: ${profile.sequence ? "a short imperative instruction for this step." : "empty string."}

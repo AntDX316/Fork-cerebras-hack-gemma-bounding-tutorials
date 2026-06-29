@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useRef, useState } from "react";
 import type { AnalyzeResult } from "@/schemas/annotation";
 import { getPreset } from "@/prompts/presets";
 import { ModePicker } from "./ModePicker";
@@ -9,6 +9,7 @@ import { WebcamCapture } from "./WebcamCapture";
 import { ImageStage } from "./ImageStage";
 import { StepTimeline } from "./overlay/StepTimeline";
 import { GoodPanel } from "./panels/GoodPanel";
+import { ResourcesPanel } from "./panels/ResourcesPanel";
 import { SpeedHud } from "./panels/SpeedHud";
 import { AskBox } from "./AskBox";
 import { ExportBar } from "./ExportBar";
@@ -24,6 +25,40 @@ interface Analyzed {
 
 const MODEL = "gemma-4-31b";
 
+/** Thin collapsed rail with a vertical label; click to re-expand the panel. */
+function SideRail({ label, side, onOpen }: { label: string; side: "left" | "right"; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Expand ${label} panel`}
+      title={`Expand ${label}`}
+      className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground lg:h-full lg:flex-col"
+    >
+      <span className="text-sm leading-none">{side === "left" ? "›" : "‹"}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wide lg:[writing-mode:vertical-rl]">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+/** Small inline collapse control shown at the top of an open side panel (lg only). */
+function CollapseButton({ side, onClose }: { side: "left" | "right"; onClose: () => void }) {
+  return (
+    <div className={`hidden lg:flex ${side === "left" ? "justify-end" : "justify-start"}`}>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Collapse panel"
+        className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+      >
+        {side === "left" ? "Hide ‹" : "› Hide"}
+      </button>
+    </div>
+  );
+}
+
 export default function Analyzer() {
   const [presetId, setPresetId] = useState<string | undefined>("fridge");
   const [goal, setGoal] = useState("");
@@ -35,6 +70,8 @@ export default function Analyzer() {
   const [activeStep, setActiveStep] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [live, setLive] = useState(false);
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
 
   const inFlight = useRef(false);
 
@@ -92,11 +129,20 @@ export default function Analyzer() {
       ].join("\n")
     : "";
 
+  const cols = `${leftOpen ? "320px" : "2.75rem"} minmax(0,1fr) ${rightOpen ? "340px" : "2.75rem"}`;
+
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
-      {/* Left: mode + capture */}
-      <div className="space-y-4">
-        <ModePicker presetId={presetId} goal={goal} onPreset={onPreset} onGoal={onGoal} />
+    <div
+      className="grid grid-cols-1 gap-4 lg:[grid-template-columns:var(--vc-cols)]"
+      style={{ "--vc-cols": cols } as CSSProperties}
+    >
+      {/* Left: mode + capture (collapsible) */}
+      {!leftOpen ? (
+        <SideRail label="Setup" side="left" onOpen={() => setLeftOpen(true)} />
+      ) : (
+        <div className="min-w-0 space-y-3">
+          <CollapseButton side="left" onClose={() => setLeftOpen(false)} />
+          <ModePicker presetId={presetId} goal={goal} onPreset={onPreset} onGoal={onGoal} />
 
         <Card>
           <CardContent>
@@ -140,10 +186,11 @@ export default function Analyzer() {
             {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
 
       {/* Center: stage */}
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         {displaySrc ? (
           <ImageStage
             src={displaySrc}
@@ -180,12 +227,17 @@ export default function Analyzer() {
         )}
       </div>
 
-      {/* Right: results */}
-      <div className="space-y-4">
-        {result ? (
+      {/* Right: results (collapsible) */}
+      {!rightOpen ? (
+        <SideRail label="Results" side="right" onOpen={() => setRightOpen(true)} />
+      ) : (
+        <div className="min-w-0 space-y-4">
+          <CollapseButton side="right" onClose={() => setRightOpen(false)} />
+          {result ? (
           <>
             <SpeedHud speed={result.speed} model={MODEL} />
             <GoodPanel result={result} />
+            <ResourcesPanel result={result} />
             {result.warnings && result.warnings.length > 0 && (
               <div className="rounded-xl border border-amber-300/50 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
                 <div className="font-semibold">Notes</div>
@@ -204,8 +256,9 @@ export default function Analyzer() {
               Results, scores, and the Cerebras speed HUD will appear here.
             </CardContent>
           </Card>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

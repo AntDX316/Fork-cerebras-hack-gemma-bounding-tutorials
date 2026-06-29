@@ -7,12 +7,14 @@ export function Tooltip({
   a,
   profile,
   style,
+  showResources = true,
   onMouseEnter,
   onMouseLeave,
 }: {
   a: Annotation;
   profile: TaskProfile;
   style: CSSProperties;
+  showResources?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
@@ -20,7 +22,7 @@ export function Tooltip({
     <div
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className="absolute z-30 w-64 rounded-xl bg-slate-900/95 p-3 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur"
+      className="absolute z-30 w-64 overflow-y-auto rounded-xl bg-slate-900/95 p-3 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur"
       style={style}
     >
       <div className="font-semibold">
@@ -62,19 +64,25 @@ export function Tooltip({
         </div>
       )}
 
-      {a.citations.length > 0 && (
-        <div className="pointer-events-auto mt-2 flex flex-wrap gap-1">
-          {a.citations.slice(0, 3).map((c, i) => (
-            <a
-              key={i}
-              href={c.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] text-cyan-300 underline opacity-80 hover:opacity-100"
-            >
-              {(c.title || "source").slice(0, 22)}
-            </a>
-          ))}
+      {showResources && a.citations.length > 0 && (
+        <div className="mt-2 border-t border-white/10 pt-2">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+            Resources
+          </div>
+          <ul className="pointer-events-auto space-y-1">
+            {a.citations.slice(0, 3).map((c, i) => (
+              <li key={i}>
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-cyan-300 underline underline-offset-2 opacity-90 hover:opacity-100"
+                >
+                  {(c.title || c.url || "source").slice(0, 46)}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

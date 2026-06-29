@@ -5,6 +5,7 @@ import type { AnalyzeResult } from "@/schemas/annotation";
 import { ImageStage } from "./ImageStage";
 import { StepTimeline } from "./overlay/StepTimeline";
 import { GoodPanel } from "./panels/GoodPanel";
+import { ResourcesPanel } from "./panels/ResourcesPanel";
 import { SpeedHud } from "./panels/SpeedHud";
 import { AskBox } from "./AskBox";
 
@@ -61,7 +62,7 @@ export function SharedView({
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         <ImageStage src={imageUrl} manualSrc={manualUrl} result={result} activeStep={activeStep} />
 
         {result.profile.sequence && steps.length > 0 && (
@@ -75,9 +76,10 @@ export function SharedView({
         )}
       </div>
 
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <SpeedHud speed={result.speed} model={MODEL} />
         <GoodPanel result={result} />
+        <ResourcesPanel result={result} />
         <AskBox context={askContext} image={imageDataUri} />
       </div>
     </div>

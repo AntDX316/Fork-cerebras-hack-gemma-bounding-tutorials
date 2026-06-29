@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/Markdown";
 
 /** Streaming follow-up chat about the current analysis (shows Cerebras speed live). */
 export function AskBox({ context, image }: { context: string; image?: string }) {
@@ -66,8 +67,8 @@ export function AskBox({ context, image }: { context: string; image?: string }) 
           </Button>
         </div>
         {answer && (
-          <div className="mt-3 whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm text-foreground/80">
-            {answer}
+          <div className="mt-3 rounded-lg bg-muted p-3">
+            <Markdown>{answer}</Markdown>
           </div>
         )}
       </CardContent>

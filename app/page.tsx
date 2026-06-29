@@ -17,7 +17,12 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="outline" size="sm" render={<a href="/api/health?live=1" />}>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<a href="/api/health?live=1" />}
+            >
               Health check
             </Button>
           </div>

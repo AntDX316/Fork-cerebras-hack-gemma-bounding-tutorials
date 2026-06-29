@@ -49,7 +49,7 @@ export function GoodPanel({ result }: { result: AnalyzeResult }) {
         )}
 
         {tip && (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="mt-4 rounded-lg border border-amber-300/50 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200">
             <span className="font-semibold">Tip: </span>
             {tip}
           </div>
